@@ -1,58 +1,11 @@
 import { createReadStream } from "fs";
 import { open } from "node:fs/promises";
 import { parse } from 'csv-parse';
-import { splittings } from './splittings.js';
 
 async function firstAndRest(iterable) {
     const iterator = iterable[Symbol.asyncIterator]()
     const { value: first } = await iterator.next();
     return [first, iterator];
-}
-
-const wordFile = await open("words_alpha.txt")
-const wordSet = new Set()
-
-for await (const line of wordFile.readLines()) {
-    const trimmedLine = line.trim();
-    wordSet.add(trimmedLine);
-}
-
-wordFile.close();
-
-function capitalize(word) {
-    if (word === "") {
-        return word;
-    }
-    const [firstLetter, ...rest] = word;
-    return firstLetter.toUpperCase() + rest.join("");
-}
-
-function convertToCamelCaseHeuristic(words, identifier) {
-    const allSplittings = splittings(identifier);
-
-    let bestSplitting = null;
-    let bestWordCount = 0;
-
-    for (const splitting of allSplittings) {
-        const wordCount = splitting.filter(part => words.has(part)).length;
-        if (splitting.every(part => words.has(part))) {
-            if (bestSplitting === null || splitting.length < bestSplitting.length || bestSplitting.length !== bestWordCount) {
-                bestSplitting = splitting
-                bestWordCount = splitting.length
-            }
-        } else if (bestSplitting === null) {
-            bestSplitting = splitting
-            bestWordCount = wordCount
-        } else if ((splitting.length - wordCount) < (bestSplitting.length - bestWordCount)) {
-            bestSplitting = splitting;
-            bestWordCount = wordCount
-        }
-    }
-
-    const [firstWord, ...restWords] = bestSplitting
-    const camelCaseIdentifier = firstWord + restWords.map(word => capitalize(word)).join("");
-
-    return camelCaseIdentifier
 }
 
 async function readCsv(filePath, fieldNameConverter, fieldNamesToIgnore) {
@@ -91,26 +44,49 @@ async function readCsv(filePath, fieldNameConverter, fieldNamesToIgnore) {
     return objects;
 }
 
-const artObjects = await readCsv("../../../opendata/data/objects.csv", 
-    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), 
-    [ "provenanceText", "accessioned", "attributionInverted", "isVirtual", "lastDetectedModification", "locationId",
-        "subclassification", "departmentAbbr", "accessionNum", "customPrintUrl", "portfolio", "volume", "watermarks",
-        "series"])
-
 const fieldNamesByInputFieldNames = {
+    "objectid": "objectId",
     "mediaid": "mediaId",
+    "displaydate": "displayDate",
+    "beginyear": "beginYear",
+    "visualbrowsertimespan": "visualBrowserTimeSpan",
+    "creditLine": "creditLine",
+    "visualbrowserclassification": "visualBrowserClassification",
+    "parentid": "parentId",
+    "wikidataid": "wikiDataId",
     "relatedid": "relatedId",
-    "relatedentity": "relatedEntity"
+    "relatedentity": "relatedEntity",
+    "mediatype": "mediaType",
+    "language": "language",
+    "thumbnailurl": "thumbnailUrl",
+    "playurl": "playUrl",
+    "downloadurl": "downloadUrl",
+    "imageurl": "imageUrl",
+    "presentationurl": "presentationUrl",
+    "releasedate": "releaseDate",
+    "presentationDate": "presentationDate",
+    "lastmodified": "lastModified",
+    "viewtype": "viewType",
+    "maxPixels": "maxPixels",
+    "depictstmsobjectid": "depictsObjectId",
+    "assistivetext": "assistiveText"
 };
 
+const artObjects = await readCsv("../../../opendata/data/objects.csv", 
+    fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, 
+    [ "provenancetext", "accessioned", "attributioninverted", "isvirtual", "lastdetectedmodification", "locationid",
+        "subclassification", "departmentabbr", "accessionnum", "customprinturl", "portfolio", "volume", "watermarks",
+        "series"])
+
 const mediaRelationShips = await readCsv("../../../opendata/data/media_relationships.csv", 
-    fieldName => fieldNamesByInputFieldNames[fieldName], []);
+    fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, []);
+
 
 const mediaItems = await readCsv("../../../opendata/data/media_items.csv", 
-    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), []);
+    fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, []);
 
 const publishedImages = await readCsv("../../../opendata/data/published_images.csv", 
-    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), [])    
+    fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, [])    
 
 const artObjectsByIds = {};
 
@@ -138,7 +114,7 @@ for (const { mediaId,  relatedId } of mediaRelationShips) {
 }
 
 for (const publishedImage of publishedImages) {
-    const objectId = publishedImage.depictsTmSObjectId
+    const objectId = publishedImage.depictsObjectId
 
     if (objectId in artObjectsByIds) {
 
@@ -152,7 +128,8 @@ for (const publishedImage of publishedImages) {
     }
 }
 
-const artObjectsWithMediaItems = artObjects.filter(artObject => ("mediaItems" in artObject) && ("images" in artObject));
+const artObjectsWithMediaItems = artObjects.filter(artObject => ("images" in artObject) && ("mediaItems" in artObject));
+console.log(`${artObjectsWithMediaItems.length} art objects imported.`)
 
 const objectsFile = await open("../data/objects.json", "w");
 await objectsFile.write(JSON.stringify(artObjectsWithMediaItems, null, "\t"), null, "utf-8"); 
