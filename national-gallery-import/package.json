@@ -1,0 +1,15 @@
+{
+  "name": "national-gallery-import",
+  "version": "1.0.0",
+  "description": "",
+  "main": "import.js",
+  "type": "module",
+  "scripts": {
+    "start": "node import.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv": "^6.2.7"
+  }
+}
