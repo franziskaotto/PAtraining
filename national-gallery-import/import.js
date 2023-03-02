@@ -53,48 +53,48 @@ function convertToCamelCaseHeuristic(words, identifier) {
     return camelCaseIdentifier
 }
 
-const recordsIterable = createReadStream("../../../opendata/data/objects.csv").pipe(parse({
-    delimiter: ","
-}));
-
-const [headers, records] = await firstAndRest(recordsIterable);
-
-for (const index in headers) {
-    headers[index] = convertToCamelCaseHeuristic(wordSet, headers[index]);
-}
-
-const artObjects = [];
-
-for await (const record of records) {
-    const artObject = {};
-
-    for (const index in record) {
-        let value = record[index].trim();
-
-        if (Number.isFinite(Number(value))) {
-            value = Number(value)
-        }
-
-        artObject[headers[index]] = value;
+async function readCsv(filePath, fieldNameConverter, fieldNamesToIgnore) {
+    const recordsIterable = createReadStream(filePath).pipe(parse({
+        delimiter: ","
+    }));
+    
+    const [headers, records] = await firstAndRest(recordsIterable);
+    
+    for (const index in headers) {
+        headers[index] = fieldNameConverter(headers[index]);
     }
 
-    delete artObject.provenanceText;
-    delete artObject.accessioned;
-    delete artObject.attributionInverted;
-    delete artObject.isVirtual;
-    delete artObject.lastDetectedModification;
-    delete artObject.locationId;
-    delete artObject.subclassification;
-    delete artObject.departmentAbbr;
-    delete artObject.accessionNum;
-    delete artObject.customPrintUrl;
-    delete artObject.portfolio;
-    delete artObject.volume;
-    delete artObject.watermarks;
-    delete artObject.series;
-    artObjects.push(artObject);
+    const objects = [];
+
+    for await (const record of records) {
+        const object = {};
+    
+        for (const index in record) {
+            let value = record[index].trim();
+    
+            if (Number.isFinite(Number(value))) {
+                value = Number(value)
+            }
+    
+            object[headers[index]] = value;
+        }
+    
+        for (const fieldName of fieldNamesToIgnore) {
+            delete object[fieldName];
+        }
+
+        objects.push(object);
+    }
+
+    return objects;
 }
+
+const artObjects = readCsv("../../../opendata/data/objects.csv", 
+    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), 
+    [ "provenanceText", "accessioned", "attributionInverted", "isVirtual", "lastDetectedModification", "locationId",
+        "subclassification", "departmentAbbr", "accessionNum", "customPrintUrl", "portfolio", "volume", "watermarks",
+        "series"])
 
 const objectsFile = await open("../data/objects.json", "w");
 
-await objectsFile.write(JSON.stringify(artObjects, null, "\t"));
+await objectsFile.write(JSON.stringify(artObjects, null, "\t")); 
