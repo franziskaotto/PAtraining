@@ -17,6 +17,8 @@ for await (const line of wordFile.readLines()) {
     wordSet.add(trimmedLine);
 }
 
+wordFile.close();
+
 function capitalize(word) {
     if (word === "") {
         return word;
@@ -54,11 +56,11 @@ function convertToCamelCaseHeuristic(words, identifier) {
 }
 
 async function readCsv(filePath, fieldNameConverter, fieldNamesToIgnore) {
-    const recordsIterable = createReadStream(filePath).pipe(parse({
+    const recordsStream = createReadStream(filePath, { encoding: "utf-8" }).pipe(parse({
         delimiter: ","
     }));
     
-    const [headers, records] = await firstAndRest(recordsIterable);
+    const [headers, records] = await firstAndRest(recordsStream);
     
     for (const index in headers) {
         headers[index] = fieldNameConverter(headers[index]);
@@ -89,12 +91,69 @@ async function readCsv(filePath, fieldNameConverter, fieldNamesToIgnore) {
     return objects;
 }
 
-const artObjects = readCsv("../../../opendata/data/objects.csv", 
+const artObjects = await readCsv("../../../opendata/data/objects.csv", 
     fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), 
     [ "provenanceText", "accessioned", "attributionInverted", "isVirtual", "lastDetectedModification", "locationId",
         "subclassification", "departmentAbbr", "accessionNum", "customPrintUrl", "portfolio", "volume", "watermarks",
         "series"])
 
-const objectsFile = await open("../data/objects.json", "w");
+const fieldNamesByInputFieldNames = {
+    "mediaid": "mediaId",
+    "relatedid": "relatedId",
+    "relatedentity": "relatedEntity"
+};
 
-await objectsFile.write(JSON.stringify(artObjects, null, "\t")); 
+const mediaRelationShips = await readCsv("../../../opendata/data/media_relationships.csv", 
+    fieldName => fieldNamesByInputFieldNames[fieldName], []);
+
+const mediaItems = await readCsv("../../../opendata/data/media_items.csv", 
+    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), []);
+
+const publishedImages = await readCsv("../../../opendata/data/published_images.csv", 
+    fieldName => convertToCamelCaseHeuristic(wordSet, fieldName), [])    
+
+const artObjectsByIds = {};
+
+for(const object of artObjects) {
+    artObjectsByIds[object.objectId] = object;
+}
+
+const mediaItemsById = {};
+
+for (const mediaItem of mediaItems) {
+    mediaItemsById[mediaItem.mediaId] = mediaItem
+}
+
+for (const { mediaId,  relatedId } of mediaRelationShips) {
+
+    if (relatedId in artObjectsByIds) {
+        const artObject = artObjectsByIds[relatedId]
+    
+        if (!("mediaItems" in artObject)) {
+            artObject.mediaItems = [];
+        }
+    
+        artObject.mediaItems.push(mediaItemsById[mediaId]);
+    }
+}
+
+for (const publishedImage of publishedImages) {
+    const objectId = publishedImage.depictsTmSObjectId
+
+    if (objectId in artObjectsByIds) {
+
+        const artObject = artObjectsByIds[objectId];
+        
+        if (!("images" in artObject)) {
+            artObject.images = [];
+        }
+
+        artObject.images.push(publishedImage);
+    }
+}
+
+const artObjectsWithMediaItems = artObjects.filter(artObject => ("mediaItems" in artObject) && ("images" in artObject));
+
+const objectsFile = await open("../data/objects.json", "w");
+await objectsFile.write(JSON.stringify(artObjectsWithMediaItems, null, "\t"), null, "utf-8"); 
+objectsFile.close();
