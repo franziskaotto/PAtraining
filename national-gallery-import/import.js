@@ -131,6 +131,6 @@ for (const publishedImage of publishedImages) {
 const artObjectsWithMediaItems = artObjects.filter(artObject => ("images" in artObject) && ("mediaItems" in artObject));
 console.log(`${artObjectsWithMediaItems.length} art objects imported.`)
 
-const objectsFile = await open("../data/objects.json", "w");
-await objectsFile.write(JSON.stringify(artObjectsWithMediaItems, null, "\t"), null, "utf-8"); 
+const objectsFile = await open("../artObjects.js", "w");
+await objectsFile.write(`export const artObjects = ${JSON.stringify(artObjectsWithMediaItems, null, "\t")}`, null, "utf-8"); 
 objectsFile.close();
