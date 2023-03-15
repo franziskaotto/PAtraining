@@ -127,6 +127,7 @@ for (const { mediaId,  relatedId } of mediaRelationShips) {
 
 for (const publishedImage of publishedImages) {
     const objectId = publishedImage.depictsObjectId
+    publishedImage.imageUrl = publishedImage.iiifthumburl.replace("!200,200", "!800,800")
 
     if (objectId in artObjectsByIds) {
 
