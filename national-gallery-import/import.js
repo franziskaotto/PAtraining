@@ -1,6 +1,9 @@
 import { createReadStream } from "fs";
 import { open } from "node:fs/promises";
+import path from "node:path";
 import { parse } from 'csv-parse';
+import { exit } from "process";
+
 
 async function firstAndRest(iterable) {
     const iterator = iterable[Symbol.asyncIterator]()
@@ -72,20 +75,27 @@ const fieldNamesByInputFieldNames = {
     "assistivetext": "assistiveText"
 };
 
-const artObjects = await readCsv("../../../opendata/data/objects.csv", 
+const basePath = process.argv[2]
+
+if (basePath === undefined) {
+    console.error("Please provide the path to the opendata repository folder as a commandline argument!")
+    exit(1);
+}
+
+const artObjects = await readCsv(path.join(basePath, "data", "objects.csv"), 
     fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, 
     [ "provenancetext", "accessioned", "attributioninverted", "isvirtual", "lastdetectedmodification", "locationid",
         "subclassification", "departmentabbr", "accessionnum", "customprinturl", "portfolio", "volume", "watermarks",
         "series"])
 
-const mediaRelationShips = await readCsv("../../../opendata/data/media_relationships.csv", 
+const mediaRelationShips = await readCsv(path.join(basePath, "data", "media_relationships.csv"), 
     fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, []);
 
 
-const mediaItems = await readCsv("../../../opendata/data/media_items.csv", 
+const mediaItems = await readCsv(path.join(basePath, "data", "media_items.csv"), 
     fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, []);
 
-const publishedImages = await readCsv("../../../opendata/data/published_images.csv", 
+const publishedImages = await readCsv(path.join(basePath, "data", "published_images.csv"), 
     fieldName => fieldNamesByInputFieldNames[fieldName] ?? fieldName, [])    
 
 const artObjectsByIds = {};
