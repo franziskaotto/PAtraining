@@ -6,7 +6,7 @@ This is a PA practice project. It is similar to the Product list project on Jour
 Basic tasks
 -----------
 
-These tasks are not PA tasks but rather preparatory tasks that help you pratice your javascript and dom manipulation skills. However the PA practice tasks require that you implement these tasks.
+These tasks are not PA tasks but rather preparatory tasks that help you pratice your javascript and DOM manipulation skills. However the PA practice tasks require that you implement these tasks. Write all your code in the `client/public/script.js` file.
 
 Tasks
  * Write code that inserts HTML elements or code that displays information about each art piece in the `artObjects` array.
@@ -18,7 +18,7 @@ PA practice tasks
 
 First phase of the PA (~10min):
 1. Explain your code to yourself, your pet, a friend, a student, really anybody.
-2. Refactor your code such that all the code is contained in functions. Add a function `initializeUi()` that displays all the art objects on the page. The only code outside of functions is a call to this function (i.e. `initilaizeUi`). The art objects should be passed as a parameter to the `initializeUi` function.
+2. Refactor your code such that all the code is contained in functions. Add a function `initializeUi(artObjects)` that displays all the art objects on the page. The only code outside of functions is a call to this function (i.e. `initilaizeUi`). The art objects should be passed as a parameter to the `initializeUi` function.
 
 In the next phase of the PA you get two tasks, one task that filters the art objects and one that finds one. In total you have 30min for both tasks. We choose the the tasks from a pool of possible tasks. Next you find a list of tasks that are similar to the actual PA tasks.
 
@@ -48,4 +48,4 @@ All the above tasks should use the `intializeUi` function to display the art obj
 Interesting trivia
 ------------------
 
-The dataset of this project is based on the collection of the [National Gallery of Arts of United States](https://www.nga.gov/) as part of its [open data](https://github.com/NationalGalleryOfArt/opendata) program the National gallery provdes access to its data set. The [national-gallery-import](/national-gallery-import/) folder contains the script were used the generate the artObjects.js file from data set. Feel free to explore the code.
+The dataset of this project is based on the collection of the [National Gallery of Arts of United States](https://www.nga.gov/) as part of its [open data](https://github.com/NationalGalleryOfArt/opendata) program the National gallery provides access to its data set. The [national-gallery-import](/national-gallery-import/) folder contains the script were used the generate the artObjects.js file from data set. Feel free to explore the code.
