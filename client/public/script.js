@@ -30,8 +30,9 @@ function filterForVideo(artObjects) {
     for (let mediaItem of mediaItems) {
       let type = mediaItem.mediaType
 
-      if (type === "video" &&) {
-        typeVideo.push(art)
+      if (type === "video" && type.length > 2) {
+        typeVideo.push(art);
+        break
       }
     }
 
